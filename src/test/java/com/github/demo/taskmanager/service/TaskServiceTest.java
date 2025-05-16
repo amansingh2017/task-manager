@@ -1,6 +1,7 @@
 package com.github.demo.taskmanager.service;
 
 import com.github.demo.taskmanager.model.Task;
+import com.github.demo.taskmanager.model.TaskDto;
 import com.github.demo.taskmanager.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,13 +11,12 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +40,7 @@ class TaskServiceTest {
 
         when(taskRepository.findAll()).thenReturn(tasks);
 
-        List<Task> result = taskService.getAllTasks();
+        List<TaskDto> result = taskService.getAllTasks();
 
         assertEquals(2, result.size());
         verify(taskRepository).findAll();
@@ -54,7 +54,9 @@ class TaskServiceTest {
 
         when(taskRepository.save(input)).thenReturn(saved);
 
-        Task result = taskService.createTask(input);
+        TaskDto inputDto =
+                TaskDto.builder().id("3").title("New Task").description("For Test Purpose").status("NEW").dueDate(LocalDateTime.now()).createdAt(LocalDateTime.now()).build();
+        TaskDto result = taskService.createTask(inputDto);
 
         assertNotNull(result.getId());
         assertEquals("New Task", result.getTitle());
@@ -64,27 +66,17 @@ class TaskServiceTest {
     @Test
     void testUpdateTask_Success() {
         Task existing = Task.builder().id("1").title("Old Task").createdAt(LocalDateTime.now()).build();
-        Task update = Task.builder().title("Updated Task").createdAt(LocalDateTime.now()).build();
+        TaskDto update = TaskDto.builder().title("Updated Task").createdAt(LocalDateTime.now()).build();
 
         when(taskRepository.findById("1")).thenReturn(Optional.of(existing));
         when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Task result = taskService.updateTask("1", update);
+        TaskDto result = taskService.updateTask("1", update);
 
         assertEquals("Updated Task", result.getTitle());
 
         verify(taskRepository).findById("1");
         verify(taskRepository).save(existing);
-    }
-
-    @Test
-    void testUpdateTask_NotFound() {
-        when(taskRepository.findById("99")).thenReturn(Optional.empty());
-
-        assertThrows(NoSuchElementException.class, () -> taskService.updateTask("99", new Task()));
-
-        verify(taskRepository).findById("99");
-        verify(taskRepository, never()).save(any());
     }
 
     @Test

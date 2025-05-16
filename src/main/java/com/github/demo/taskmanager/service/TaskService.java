@@ -1,6 +1,7 @@
 package com.github.demo.taskmanager.service;
 
 import com.github.demo.taskmanager.model.Task;
+import com.github.demo.taskmanager.model.TaskDto;
 import com.github.demo.taskmanager.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,30 +20,73 @@ public class TaskService {
         this.repository = repository;
     }
 
-    public Task createTask(Task task) {
+    public TaskDto createTask(TaskDto taskDto) {
+        Task task = toEntity(taskDto);
         task.setCreatedAt(LocalDateTime.now());
-        return repository.save(task);
+        return toDto(repository.save(task));
     }
 
-    public List<Task> getAllTasks() {
-        return repository.findAll();
+    public List<TaskDto> getAllTasks() {
+        return toDtoList(repository.findAll());
     }
 
-    public Optional<Task> getTaskById(String id) {
-        return repository.findById(id);
+    public Optional<TaskDto> getTaskById(String id) {
+        return toDto(repository.findById(id));
     }
 
-    public Task updateTask(String id, Task updatedTask) {
+    public TaskDto updateTask(String id, TaskDto updatedTask) {
         return repository.findById(id).map(task -> {
             task.setTitle(updatedTask.getTitle());
             task.setDescription(updatedTask.getDescription());
             task.setStatus(updatedTask.getStatus());
             task.setDueDate(updatedTask.getDueDate());
-            return repository.save(task);
+            return toDto(repository.save(task));
         }).orElseThrow(() -> new IllegalArgumentException("Task not found"));
     }
 
     public void deleteTask(String id) {
         repository.deleteById(id);
+    }
+
+    public TaskDto toDto(Task task) {
+        return TaskDto.builder()
+                .id(task.getId())
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .status(task.getStatus())
+                .createdAt(task.getCreatedAt())
+                .dueDate(task.getDueDate())
+                .build();
+    }
+
+    public List<TaskDto> toDtoList(List<Task> tasks) {
+        return tasks.stream().map(this::toDto).toList();
+    }
+
+    public Optional<TaskDto> toDto(Optional<Task> taskOptional) {
+        TaskDto taskDto = null;
+        if (taskOptional.isPresent()) {
+            Task task = taskOptional.get();
+            taskDto = TaskDto.builder()
+                    .id(task.getId())
+                    .title(task.getTitle())
+                    .description(task.getDescription())
+                    .status(task.getStatus())
+                    .createdAt(task.getCreatedAt())
+                    .dueDate(task.getDueDate())
+                    .build();
+        }
+        return Optional.ofNullable(taskDto);
+    }
+
+    public Task toEntity(TaskDto taskDto) {
+        return Task.builder()
+                .id(taskDto.getId())
+                .title(taskDto.getTitle())
+                .description(taskDto.getDescription())
+                .status(taskDto.getStatus())
+                .createdAt(taskDto.getCreatedAt())
+                .dueDate(taskDto.getDueDate())
+                .build();
     }
 }
